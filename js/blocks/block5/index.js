@@ -118,8 +118,8 @@ export default class Block5 extends BaseBlock {
         // --- ИГРОВАЯ МЕХАНИКА (Catch) ---
         btnCatch.onclick = () => {
             // Зона захвата: Правые 50px ... 170px от края (120px ширина)
-            const zoneEnd = canvas.width - 50;
-            const zoneStart = canvas.width - 170;
+            const zoneEnd = canvas.width - 200;
+            const zoneStart = canvas.width - 320;
 
             // Ищем события, центры которых внутри зоны
             const hits = events.filter(e => e.x > zoneStart && e.x < zoneEnd && e.active);
@@ -1418,4 +1418,5 @@ export default class Block5 extends BaseBlock {
         // Запуск
         renderQuestion();
     }
+
 }
