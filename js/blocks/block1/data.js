@@ -190,8 +190,9 @@ export const block1Data = [
 
             <div id="quiz-result" style="text-align: center; margin-top: 30px; display: none;">
                 <h3 style="color: var(--primary-color);">Поздравляем!</h3>
-                <p>Вы успешно сдали тест по физическим основам ЭЭГ.</p>
+                <p>Вы закончили блок по физическим основам ЭЭГ.</p>
             </div>
         `
     }
+
 ];
