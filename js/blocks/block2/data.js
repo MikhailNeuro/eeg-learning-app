@@ -241,7 +241,7 @@ export const block2Data = [
                     Клиент: "Я врач-эпилептолог. Мне нужно записывать ЭЭГ во сне (8 часов). Что мне купить?"
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-outline" id="btn-case-wet">Компак-нейро (Мокрые)</button>
+                    <button class="btn btn-outline" id="btn-case-wet">Компакт-нейро (Мокрые)</button>
                     <button class="btn btn-outline" id="btn-case-dry">BrainBit (Сухие)</button>
                 </div>
                 <div id="scenario-feedback" style="margin-top: 10px; font-size: 13px; font-weight: bold;"></div>
@@ -264,4 +264,5 @@ export const block2Data = [
             </div>
         `
     }
+
 ];
