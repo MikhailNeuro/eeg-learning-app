@@ -259,10 +259,11 @@ export const block2Data = [
             </div>
 
             <div id="quiz-result" style="text-align: center; margin-top: 30px; display: none;">
-                <h3 style="color: var(--primary-color);">Технический блок сдан!</h3>
+                <h3 style="color: var(--primary-color);">Технический блок закончен!</h3>
                 <p>Вы разобрались с импедансом, монтажами и «землей».</p>
             </div>
         `
     }
 
 ];
+
