@@ -287,7 +287,7 @@ export const block5Data = [
                 <p>Этот тест содержит 20 сложных вопросов, охватывающих физику, схемотехнику, продуктовую линейку и методы применения.</p>
 
                 <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffeeba;">
-                    <b>Критерий успеха:</b> 85% правильных ответов (17 из 10).
+                    <b>Критерий успеха:</b> 85% правильных ответов (17 из 20).
                 </div>
 
                 <div id="exam-container" style="text-align: left; margin-top: 30px;">
@@ -307,4 +307,5 @@ export const block5Data = [
             </div>
         `
     }
+
 ];
