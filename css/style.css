@@ -1496,7 +1496,7 @@ input[type=range].precision-slider {
 .capture-zone {
     position: absolute;
     top: 0;
-    right: 50px;
+    right: 200px;
     width: 120px; /* Широкая зона */
     height: 100%;
     background: rgba(0, 255, 0, 0.1);
@@ -2215,3 +2215,4 @@ input[type=range].precision-slider {
     .ad-preview { height: 150px; }
     .nm-charts-grid { grid-template-columns: 1fr; }
 }
+
