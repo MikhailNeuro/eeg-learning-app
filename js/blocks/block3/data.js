@@ -247,10 +247,11 @@ export const block3Data = [
             </div>
 
             <div id="quiz-result" style="text-align: center; margin-top: 30px; display: none;">
-                <h3 style="color: var(--primary-color);">Блок 3 сдан!</h3>
-                <p>Вы подтвердили квалификацию в области цифровой обработки сигналов ЭЭГ.</p>
+                <h3 style="color: var(--primary-color);">Блок 3 закончен!</h3>
+                <p>Вы разобрались в области цифровой обработки сигналов ЭЭГ.</p>
             </div>
         `
     }
+
 
 ];
