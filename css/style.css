@@ -161,7 +161,29 @@ body {
     text-align: center;
     margin-top: 4px;
 }
+/* Дельта (Глубокий сон - Синий/Индиго) */
+#toggle-delta .toggle-indicator { background: #74b9ff; }
+#toggle-delta.active {
+    border-color: #0984e3;
+    background: #e3f2fd;
+}
+#toggle-delta.active .toggle-indicator { background: #0984e3; }
 
+/* Альфа (Релакс - Зеленый/Мятный) */
+#toggle-alpha .toggle-indicator { background: #55efc4; }
+#toggle-alpha.active {
+    border-color: #00b894;
+    background: #e0fbf6;
+}
+#toggle-alpha.active .toggle-indicator { background: #00b894; }
+
+/* Бета (Активность - Фиолетовый) */
+#toggle-beta .toggle-indicator { background: #a29bfe; }
+#toggle-beta.active {
+    border-color: #6c5ce7;
+    background: #f0e6ff;
+}
+#toggle-beta.active .toggle-indicator { background: #6c5ce7; }
 /* Тета (Спокойствие) */
 #toggle-theta .toggle-indicator { background: #81ecec; }
 #toggle-theta.active { border-color: #00cec9; background: #e0fbfb; }
@@ -1096,6 +1118,8 @@ input[type=range].precision-slider {
 }
 
 .product-card {
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     background: #fff;
     border: 1px solid #dee2e6;
     border-radius: 8px;
@@ -1115,9 +1139,20 @@ input[type=range].precision-slider {
 }
 
 .product-card.selected {
-    border: 2px solid var(--primary-color);
-    background: #f8faff;
+    border: 3px solid var(--primary-color) !important; /* Жирная рамка */
+    background-color: #e3f2fd !important; /* Насыщенный голубой фон */
+
+    /* Двойная тень: размытый ореол цвета рамки + тень снизу */
+    box-shadow:
+        0 0 0 4px rgba(0, 86, 179, 0.2),
+        0 10px 20px rgba(0, 0, 0, 0.15);
+
+    transform: translateY(-5px) scale(1.02); /* Карточка "всплывает" */
+    z-index: 2; /* Встает поверх соседей */
 }
+
+
+
 
 /* Бейджи (Метки) */
 .badge {
@@ -1140,12 +1175,33 @@ input[type=range].precision-slider {
 /* Детальный просмотр (внизу) */
 .product-detail-view {
     background: #fff;
-    border: 1px solid #dee2e6;
+    border: 2px solid var(--primary-color); /* Выделим рамкой */
     border-radius: 8px;
     padding: 20px;
-    margin-top: 20px;
-    display: none; /* Скрыто по умолчанию */
-    animation: fadeIn 0.3s;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: none;
+    animation: expandDetail 0.3s ease-out;
+    grid-column: 1 / -1;
+    width: 100%;
+    position: relative;
+}
+
+.product-detail-view::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid var(--primary-color);
+    transition: left 0.3s;
+}
+
+@keyframes expandDetail {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .detail-specs {
@@ -2216,3 +2272,202 @@ input[type=range].precision-slider {
     .nm-charts-grid { grid-template-columns: 1fr; }
 }
 
+/* --- Стили для неактивных кнопок --- */
+.btn:disabled,
+.action-btn:disabled {
+    background-color: #bdc3c7;
+    color: #fff;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.7;
+    border-color: transparent;
+}
+
+.btn:disabled:hover,
+.action-btn:disabled:hover {
+    background-color: #bdc3c7;
+    transform: none;
+}
+
+/* --- Цветовая схема для Consumer (Раздел 4.3) --- */
+
+#con-grid .product-card.selected {
+    border-color: #d35400 !important; /* Темно-оранжевый */
+    background-color: #fff3e0 !important; /* Очень светло-оранжевый */
+
+    box-shadow:
+        0 0 0 4px rgba(211, 84, 0, 0.2),
+        0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+#con-grid .product-card.selected::before {
+    background-color: #d35400;
+}
+
+#con-detail {
+    border-color: #d35400 !important;
+}
+
+#con-detail::before {
+    border-bottom-color: #d35400 !important;
+}
+
+/* --- Бейджи в меню --- */
+.badge-pass {
+    background: #d4edda; color: #155724;
+    padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;
+    border: 1px solid #c3e6cb;
+}
+.badge-fail {
+    background: #fff3cd; color: #856404;
+    padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;
+    border: 1px solid #ffeeba;
+}
+.badge-new {
+    background: #e2e3e5; color: #383d41;
+    padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;
+}
+.menu-btn-passed {
+    border-left: 5px solid #2ecc71 !important;
+}
+.menu-grid {
+    display: flex;
+    flex-direction: column; /* Строго вертикальный список */
+    gap: 15px;
+    width: 100%;
+    max-width: 800px; /* Ограничение ширины */
+    margin: 20px auto; /* Центрирование */
+}
+
+.menu-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    text-align: left;
+    width: 100%; /* Растянуть на всю ширину контейнера */
+}
+
+.menu-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border-color: var(--primary-color);
+}
+
+/* Сброс инлайновых стилей JS через !important, чтобы вернуть единый стиль */
+#btn-start-retake, #btn-retake {
+    font-family: inherit !important;
+    border-radius: 8px !important; /* Стандартное скругление для всего приложения */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-transform: none !important; /* Убираем капс, если был */
+    letter-spacing: normal !important;
+}
+
+/* --- Встроенный результат теста --- */
+.inline-result-box {
+    margin-top: 30px;
+    padding: 25px;
+    background: #ffffff;
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-score-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin: 10px 0;
+}
+
+.result-message {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* Кнопка "Следующий вопрос" */
+#exam-container .action-btn {
+    background-color: var(--primary-color); /* Синий */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%; /* На всю ширину карточки */
+    margin-top: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 86, 179, 0.2);
+}
+
+#exam-container .action-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 86, 179, 0.3);
+}
+
+/* Кнопка "Пересдать" (В результатах) */
+#btn-retake {
+    background-color: white !important;
+    color: var(--primary-color) !important;
+    border: 2px solid var(--primary-color) !important;
+    border-radius: 8px !important;
+    padding: 10px 24px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+#btn-retake:hover {
+    background-color: #e3f2fd !important; /* Светло-голубой фон */
+    transform: translateY(-2px);
+}
+
+#btn-retake::before {
+    content: '↺';
+    font-size: 16px;
+}
+
+#exam-container .action-btn {
+    background-color: #0056b3 !important; /* Ярко-синий */
+    color: #ffffff !important;            /* Белый текст */
+    border: none !important;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#exam-container .action-btn:hover {
+    background-color: #004494 !important;
+}
