@@ -11,9 +11,9 @@ export const block1Data = [
 
             <div style="margin-top: 25px; padding: 0; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                 <!-- Легенда -->
-                <div style="display: flex; background: #2c3e50; color: #fff; font-size: 12px; padding: 5px 10px;">
-                    <div style="width: 65%;">Активность нейронов (Кора)</div>
-                    <div style="width: 35%; border-left: 1px solid #555; padding-left: 10px;">Экран прибора (Сигнал)</div>
+                <div style="display: grid; grid-template-columns: 65% 35%; background: #2c3e50; color: #fff; font-size: 12px; line-height: 1.5;">
+                    <div style="border-right: 1px solid #555; padding: 5px 10px;">Активность нейронов (Кора)</div>
+                    <div style="padding: 5px 10px;">Экран прибора (Сигнал)</div>
                 </div>
 
                 <canvas id="neuronCanvas" width="600" height="250" style="width: 100%; display: block;"></canvas>
@@ -194,5 +194,4 @@ export const block1Data = [
             </div>
         `
     }
-
 ];

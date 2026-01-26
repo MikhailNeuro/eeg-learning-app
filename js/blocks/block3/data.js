@@ -253,5 +253,4 @@ export const block3Data = [
         `
     }
 
-
 ];

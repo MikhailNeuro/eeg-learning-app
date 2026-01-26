@@ -332,74 +332,58 @@ export default class Block5 extends BaseBlock {
         const c4 = svg.querySelector('#zone-c4 circle');
 
         // 2. Логика управления
-        // Используем числа с плавающей точкой для точности
         let targetPos = 50.0;
         let currentPos = 50.0;
 
-        // Команды
         const setLeft = () => {
-            targetPos = 5.0; // Цель - левый край (с отступом)
-            c4.style.fill = '#ff7675'; // Активно Правое (C4)
+            targetPos = 5.0;
+            c4.style.fill = '#ff7675';
             c3.style.fill = '#333';
             btnLeft.classList.add('pressed');
         };
 
         const setRight = () => {
-            targetPos = 95.0; // Цель - правый край
-            c3.style.fill = '#ff7675'; // Активно Левое (C3)
+            targetPos = 95.0;
+            c3.style.fill = '#ff7675';
             c4.style.fill = '#333';
             btnRight.classList.add('pressed');
         };
 
         const setIdle = () => {
-            // ИЗМЕНЕНИЕ: Не сбрасываем в 50, а фиксируем текущую позицию
             targetPos = currentPos;
-
-            // Визуально сбрасываем активность мозга (мы перестали "думать")
             c3.style.fill = '#333';
             c4.style.fill = '#333';
             btnLeft.classList.remove('pressed');
             btnRight.classList.remove('pressed');
         };
 
-        // Привязываем события
         btnLeft.onmousedown = (e) => { e.preventDefault(); setLeft(); };
         btnRight.onmousedown = (e) => { e.preventDefault(); setRight(); };
 
-        // Глобальный сброс (используем именованную функцию для удаления слушателя при желании)
         const onRelease = () => setIdle();
         document.addEventListener('mouseup', onRelease);
 
-        // Touch события
         btnLeft.ontouchstart = (e) => { e.preventDefault(); setLeft(); };
         btnRight.ontouchstart = (e) => { e.preventDefault(); setRight(); };
         document.addEventListener('touchend', onRelease);
 
         // 3. Анимационный цикл
         const animate = () => {
-            // ИЗМЕНЕНИЕ: Уменьшил коэффициент с 0.1 до 0.03 для плавности
             const lerpFactor = 0.03;
             const diff = targetPos - currentPos;
 
-            // Двигаем, если есть разница (с защитой от микро-дрожания)
             if (Math.abs(diff) > 0.1) {
                 currentPos += diff * lerpFactor;
 
-                // Обновляем позицию
                 droneEl.style.left = `${currentPos}%`;
 
-                // Наклон дрона зависит от скорости (diff)
-                // Ограничиваем угол наклона, чтобы не переворачивался (макс 25 градусов)
                 let tilt = diff * 0.8;
                 if (tilt > 25) tilt = 25;
                 if (tilt < -25) tilt = -25;
 
                 droneEl.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
             } else {
-                // Когда остановились - выравниваем наклон
-                // Плавный возврат в 0 градусов
                 const currentRotation = parseFloat(droneEl.style.transform.replace(/[^0-9\-.,]/g, '').split(',')[2] || 0); // грубый парсинг или просто сброс
-                // Проще просто сбросить:
                 droneEl.style.transform = `translate(-50%, -50%) rotate(0deg)`;
             }
 
@@ -418,7 +402,6 @@ export default class Block5 extends BaseBlock {
         const resultEl = this.container.querySelector('#p300-result');
         const targetEl = this.container.querySelector('#p300-target');
 
-        // High DPI Canvas Fix
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
@@ -430,7 +413,6 @@ export default class Block5 extends BaseBlock {
         let dataBuffer = new Array(200).fill(0); // График
         let p300Queue = []; // Очередь анимаций "всплеска"
 
-        // Рендер сетки
         grid.innerHTML = '';
         letters.forEach(l => {
             const cell = document.createElement('div');
@@ -453,18 +435,15 @@ export default class Block5 extends BaseBlock {
         const drawSignal = () => {
             time += 0.1;
 
-            // Базовый шум ЭЭГ
             let val = (Math.random() - 0.5) * 5 + Math.sin(time)*2;
 
-            // Добавляем P300 волну, если она есть в очереди
-            // (простая симуляция: если очередь не пуста, берем значение из синусоиды)
+
             if (p300Queue.length > 0) {
                 const phase = p300Queue[0];
-                // Рисуем холм (0 to PI)
-                val += Math.sin(phase) * 40; // Амплитуда P300 (большая!)
+                val += Math.sin(phase) * 40;
 
-                p300Queue[0] += 0.1; // Шаг фазы
-                if (p300Queue[0] > Math.PI) p300Queue.shift(); // Волна закончилась
+                p300Queue[0] += 0.1;
+                if (p300Queue[0] > Math.PI) p300Queue.shift();
             }
 
             dataBuffer.shift();
@@ -506,23 +485,19 @@ export default class Block5 extends BaseBlock {
 
             // Проходим по рядам
             for (let row of rows) {
-                // Вспышка
                 row.forEach(id => document.getElementById(`p300-${id}`).classList.add('flash'));
 
-                // Если в ряду есть ЦЕЛЬ -> Запускаем волну на графике
                 if (row.includes(targetLetter)) {
-                    // P300 возникает через 300мс после стимула. Симулируем задержку.
                     setTimeout(() => {
-                        p300Queue.push(0); // Старт волны
-                        // Рисуем маркер на графике
+                        p300Queue.push(0);
                         ctx.fillStyle = 'yellow';
                         ctx.fillText("P300!", rect.width - 50, 20);
                     }, 300);
                 }
 
-                await new Promise(r => setTimeout(r, 150)); // Время вспышки
+                await new Promise(r => setTimeout(r, 150));
                 row.forEach(id => document.getElementById(`p300-${id}`).classList.remove('flash'));
-                await new Promise(r => setTimeout(r, 300)); // Пауза
+                await new Promise(r => setTimeout(r, 300));
             }
 
             resultEl.innerText = `Распознано: ${targetLetter}`;
@@ -543,7 +518,6 @@ export default class Block5 extends BaseBlock {
         const box12 = this.container.querySelector('#box-12hz');
         const box20 = this.container.querySelector('#box-20hz');
 
-        // High DPI
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
@@ -583,9 +557,7 @@ export default class Block5 extends BaseBlock {
                 if (amp > 0.3) ctx.fillText(`${hz}`, x, y - 5);
             };
 
-            // Рисуем шумовой пол (альфа, бета)
             for(let f=1; f<30; f++) {
-                // Альфа пик всегда есть немного на 10Гц
                 let amp = (f === 10) ? 0.3 : 0.05;
                 amp += Math.random() * 0.05;
                 bar(f, amp, '#333');
@@ -593,11 +565,9 @@ export default class Block5 extends BaseBlock {
 
             // РЕАКЦИЯ SSVEP
             if (activeFreq > 0) {
-                // Основной пик
                 const flicker = 0.8 + Math.random()*0.1;
                 bar(activeFreq, flicker, '#f1c40f');
 
-                // Гармоника (2x частоты) - тоже частый эффект
                 if (activeFreq * 2 < maxFreq) {
                     bar(activeFreq * 2, 0.4, '#f39c12');
                 }
@@ -636,15 +606,13 @@ export default class Block5 extends BaseBlock {
         const stripes = this.container.querySelector('#road-stripes');
         const rewardSign = this.container.querySelector('#reward-sign');
 
-        // Отключаем CSS анимацию, так как будем двигать JS-ом
         stripes.style.animation = 'none';
 
         let protocol = 'alpha';
         let carPosition = 5;
 
-        // Переменные для плавной анимации дороги
         let stripeOffset = 0;
-        let currentSpeed = 0; // Текущая сглаженная скорость
+        let currentSpeed = 0;
 
         const rawData = new Array(150).fill(0);
         const trendData = new Array(100).fill(0);
@@ -666,7 +634,6 @@ export default class Block5 extends BaseBlock {
             carPosition = 5;
             currentSpeed = 0;
 
-            // Сброс визуала
             gameScreen.style.filter = 'grayscale(0.8) brightness(0.6)';
             rewardSign.style.opacity = 0;
         };
@@ -680,7 +647,6 @@ export default class Block5 extends BaseBlock {
             time += 0.1;
             const state = parseInt(slider.value) / 100;
 
-            // --- 1. ГЕНЕРАЦИЯ ---
             let alphaAmp, betaAmp, thetaAmp;
 
             if (protocol === 'alpha') {
@@ -734,10 +700,8 @@ export default class Block5 extends BaseBlock {
                 targetSpeed = -0.1;
             }
 
-            // Плавное изменение скорости (Lerp) - убирает рывки
             currentSpeed += (targetSpeed - currentSpeed) * 0.05;
 
-            // Движение машинки
             carPosition += currentSpeed;
             if (carPosition > 85) carPosition = 85;
             if (carPosition < 5) carPosition = 5;
@@ -745,21 +709,17 @@ export default class Block5 extends BaseBlock {
 
             // --- 4. АНИМАЦИЯ ДОРОГИ (JS) ---
             if (currentSpeed > 0) {
-                // Двигаем полоски
-                stripeOffset -= currentSpeed * 15; // Множитель визуальной скорости
-                // Зацикливание паттерна (80px - ширина повтора градиента в CSS)
+                stripeOffset -= currentSpeed * 15;
                 if (stripeOffset < -80) stripeOffset += 80;
 
                 stripes.style.transform = `translateX(${stripeOffset}px)`;
 
-                // Яркость и награда
                 const brightness = 1 + (currentSpeed * 0.5);
                 gameScreen.style.filter = `brightness(${brightness})`;
                 rewardSign.style.opacity = currentSpeed > 0.2 ? 1 : 0;
             } else {
                 gameScreen.style.filter = 'grayscale(0.8) brightness(0.6)';
                 rewardSign.style.opacity = 0;
-                // Дорога стоит (не обновляем transform)
             }
 
             // --- 5. ОТРИСОВКА ГРАФИКОВ ---
@@ -775,7 +735,6 @@ export default class Block5 extends BaseBlock {
             }
             ctxRaw.stroke();
 
-            // Spectrum
             ctxSpec.fillStyle = '#000'; ctxSpec.fillRect(0, 0, specCanvas.width, specCanvas.height);
             const w = specCanvas.width;
             const h = specCanvas.height;
@@ -791,7 +750,6 @@ export default class Block5 extends BaseBlock {
             drawBar(10, alphaAmp, '#2ecc71', 'α');
             drawBar(20, betaAmp, '#e74c3c', 'β');
 
-            // Trend
             ctxTrend.fillStyle = '#000'; ctxTrend.fillRect(0, 0, trendCanvas.width, trendCanvas.height);
             const thY = h - (threshold / maxGraphVal * h);
             ctxTrend.strokeStyle = '#555'; ctxTrend.setLineDash([4,4]);
@@ -827,7 +785,6 @@ export default class Block5 extends BaseBlock {
         const valIndicator = this.container.querySelector('#val-indicator');
         const btnPlay = this.container.querySelector('#btn-play');
 
-        // Курсоры
         const mainCursor = this.container.querySelector('#main-playhead');
         const cursorEng = this.container.querySelector('#cursor-eng');
         const cursorVal = this.container.querySelector('#cursor-val');
@@ -876,17 +833,14 @@ export default class Block5 extends BaseBlock {
 
         for(let f=0; f<=totalFrames; f++) {
             const time = f / fps;
-            // Интерполяция
             const p1 = scenario.find(s => s.t <= time && (scenario[scenario.indexOf(s)+1]?.t > time || !scenario[scenario.indexOf(s)+1]));
             const p2 = scenario[scenario.indexOf(p1) + 1] || p1;
             const ratio = (time - p1.t) / (p2.t - p1.t || 1);
 
-            // Данные с шумом
             engData.push(p1.eng + (p2.eng - p1.eng) * ratio + (Math.random()-0.5)*0.05);
             valData.push(p1.val + (p2.val - p1.val) * ratio + (Math.random()-0.5)*0.05);
         }
 
-        // Рендер маркеров таймлайна
         scenario.forEach(s => {
             const m = document.createElement('div');
             m.className = 'timeline-marker';
@@ -896,7 +850,6 @@ export default class Block5 extends BaseBlock {
         });
 
         // 4. ОТРИСОВКА ГРАФИКОВ (Статичная подложка)
-        // Мы рисуем графики один раз полностью, а "Playhead" бежит поверх
         const drawFullChart = (ctx, data, color, isCenterZero) => {
             const w = ctx.canvas.width;
             const h = ctx.canvas.height;
@@ -920,10 +873,7 @@ export default class Block5 extends BaseBlock {
             ctx.stroke();
         };
 
-        // Рисуем графики сразу
         drawFullChart(ctxEng, engData, '#e67e22', false);
-        // Valence красим градиентом в функции обновления или просто серым,
-        // но лучше нарисовать сегментами
         const drawValChart = () => {
             const w = ctxVal.canvas.width;
             const h = ctxVal.canvas.height;
@@ -949,7 +899,6 @@ export default class Block5 extends BaseBlock {
         let isPlaying = false;
 
         const updateVisuals = (frameIndex) => {
-            // Ограничения
             if (frameIndex < 0) frameIndex = 0;
             if (frameIndex >= totalFrames) frameIndex = totalFrames - 1;
 
@@ -964,10 +913,8 @@ export default class Block5 extends BaseBlock {
             cursorVal.style.left = `${progressPct}%`;
 
             // B. Обновляем Видео
-            // Находим сцену
             const scene = scenario.slice().reverse().find(s => s.t <= time);
             if (scene) {
-                // Цвет текста
                 const color = val > 0.2 ? '#2ecc71' : (val < -0.2 ? '#ff7675' : '#fff');
                 adScreen.innerHTML = `
                     <div style="color:${color}; font-weight:bold;">${scene.text}</div>
@@ -976,13 +923,10 @@ export default class Block5 extends BaseBlock {
             }
 
             // C. Топограмма (Асимметрия)
-            // Визуализируем активацию
             if (val > 0.15) {
-                // POSITIVE: Левое полушарие (F3) активно (красное), Правое (F4) спокойно
                 f3.style.fill = `rgba(255, 80, 80, ${Math.min(1, val*1.5)})`;
                 f4.style.fill = '#333';
             } else if (val < -0.15) {
-                // NEGATIVE: Правое полушарие (F4) активно
                 f3.style.fill = '#333';
                 f4.style.fill = `rgba(255, 80, 80, ${Math.min(1, Math.abs(val)*1.5)})`;
             } else {
@@ -990,13 +934,11 @@ export default class Block5 extends BaseBlock {
                 f4.style.fill = '#333';
             }
 
-            // Полоска индикатор
             valIndicator.style.left = `${((val + 1) / 2) * 100}%`;
         };
 
         // 6. УПРАВЛЕНИЕ (Клик по таймлайну)
         timeline.onclick = (e) => {
-            // Если играет - пауза
             if(isPlaying) {
                 isPlaying = false;
                 cancelAnimationFrame(this.marketingAnim);
@@ -1044,10 +986,9 @@ export default class Block5 extends BaseBlock {
         const quizBtns = quizOptions.querySelectorAll('.quiz-btn');
         quizBtns.forEach(btn => {
             btn.onclick = () => {
-                // Сброс стилей
                 quizBtns.forEach(b => {
                     b.classList.remove('correct', 'wrong');
-                    b.disabled = true; // Блокируем после ответа
+                    b.disabled = true;
                 });
 
                 const isCorrect = btn.dataset.correct === "true";
@@ -1073,22 +1014,27 @@ export default class Block5 extends BaseBlock {
             };
         });
 
-        // Инициализация (1 кадр)
         updateVisuals(0);
     }
     initQuiz() {
         const container = this.container.querySelector('#exam-container');
         const resultScreen = this.container.querySelector('#exam-result');
+        const systemFinishBtn = this.container.querySelector('#next-btn');
 
         // Элементы результата
         const resIcon = this.container.querySelector('#result-icon');
         const resTitle = this.container.querySelector('#result-title');
         const resDesc = this.container.querySelector('#result-desc');
         const resScore = this.container.querySelector('#result-score');
-        const btnRestart = this.container.querySelector('#btn-restart');
+        const btnRestart = this.container.querySelector('#btn-retake'); // Исправленный ID
         const btnCert = this.container.querySelector('#btn-cert');
 
         if (!container) return;
+
+        // 1. ПРОВЕРКА ИСТОРИИ
+        const savedData = this.progressManager ? this.progressManager.getBlockInfo(5) : null;
+        const hasHistory = savedData && savedData.attempts.length > 0;
+
 
         const questions = [
             {
@@ -1116,10 +1062,10 @@ export default class Block5 extends BaseBlock {
                 options: [
                     { text: "Нейрополиграф (Стационарный).", correct: false },
                     { text: "BrainBit Flex (Гибкое расположение).", correct: true },
-                    { text: "Обычный BrainBit (Ободок).", correct: false },
+                    { text: "Обычный BrainBit.", correct: false },
                     { text: "Callibri (1 канал).", correct: false }
                 ],
-                explanation: "В маркетинге важны лобные доли (эмоции). Ободок BrainBit туда не достает. Полиграф пугает респондентов. Flex — идеальный баланс."
+                explanation: "В маркетинге важны лобные доли (эмоции). BrainBit не снимает показатели с этой области. Полиграф пугает респондентов. Flex — идеальный баланс."
             },
             {
                 text: "4. Резкий всплеск 200 мкВ в лобных отведениях (Fp1, Fp2), совпадающий со взглядом вниз. Что это?",
@@ -1296,7 +1242,6 @@ export default class Block5 extends BaseBlock {
         let currentQIndex = 0;
         let score = 0;
 
-        // Рендер вопроса
         const renderQuestion = () => {
             container.innerHTML = '';
 
@@ -1322,7 +1267,7 @@ export default class Block5 extends BaseBlock {
             const optsContainer = card.querySelector('#opts-container');
             const explContainer = card.querySelector('#expl-container');
 
-            // Перемешиваем ответы
+            // Перемешивание
             const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
 
             shuffledOpts.forEach(opt => {
@@ -1331,7 +1276,7 @@ export default class Block5 extends BaseBlock {
                 btn.innerText = opt.text;
 
                 btn.onclick = () => {
-                    // Блокировка кнопок
+                    // Блокировка
                     const allBtns = optsContainer.querySelectorAll('.quiz-btn');
                     allBtns.forEach(b => b.disabled = true);
 
@@ -1343,7 +1288,6 @@ export default class Block5 extends BaseBlock {
                         explContainer.style.color = "#155724";
                     } else {
                         btn.classList.add('wrong');
-                        // Показать правильный
                         const correctBtn = Array.from(allBtns).find(b => b.innerText === q.options.find(o=>o.correct).text);
                         if(correctBtn) correctBtn.classList.add('correct');
 
@@ -1354,16 +1298,22 @@ export default class Block5 extends BaseBlock {
 
                     explContainer.style.display = 'block';
 
+                    if (this.progressManager) {
+                        this.progressManager.updateProgress(5, score, questions.length);
+                    }
+
                     // Кнопка Далее
-                    const nextBtn = document.createElement('button');
-                    nextBtn.className = 'action-btn';
-                    nextBtn.style.marginTop = '15px';
-                    nextBtn.innerText = currentQIndex === questions.length - 1 ? "Завершить экзамен" : "Следующий вопрос";
-                    nextBtn.onclick = () => {
+                    const nextQBtn = document.createElement('button');
+                    nextQBtn.className = 'action-btn';
+                    nextQBtn.innerText = currentQIndex === questions.length - 1 ? "Завершить экзамен" : "Следующий вопрос";
+
+                    nextQBtn.onclick = () => {
                         currentQIndex++;
                         renderQuestion();
                     };
-                    card.appendChild(nextBtn);
+
+                    card.appendChild(nextQBtn);
+                    setTimeout(() => nextQBtn.scrollIntoView({behavior: "smooth", block: "center"}), 100);
                 };
                 optsContainer.appendChild(btn);
             });
@@ -1371,52 +1321,99 @@ export default class Block5 extends BaseBlock {
             container.appendChild(card);
         };
 
+        // --- ЭКРАН РЕЗУЛЬТАТА ---
         const showResults = () => {
             container.style.display = 'none';
             resultScreen.style.display = 'block';
 
-            const percent = (score / questions.length) * 100;
-            const passed = score >= 8;
+            const percent = Math.round((score / questions.length) * 100);
+            const passed = score >= Math.ceil(questions.length * 0.85);
+
+            if (this.progressManager) {
+                this.progressManager.saveResult(5, score, questions.length);
+            }
 
             if (passed) {
-                resIcon.innerText = "🌳"; // Эмодзи дерева или кубка
+                if (systemFinishBtn) {
+                    systemFinishBtn.disabled = false;
+                    systemFinishBtn.style.opacity = "1";
+                    systemFinishBtn.innerText = "ВЕРНУТЬСЯ В МЕНЮ";
+                }
+
+                resIcon.innerText = "🌳";
                 resTitle.innerText = "Курс успешно пройден!";
                 resTitle.style.color = "#27ae60";
+                resDesc.innerHTML = `Курс пройден! Уровень синхронизации: 100%. <br><br>Ваша награда — уважение коллег.`;
 
-                // ЗАБАВНО-СЕРЬЕЗНОЕ СООБЩЕНИЕ
-                resDesc.innerHTML = `
-                    Курс пройден! Уровень синхронизации: 100%. <br><br>
-                    Бумажного диплома не будет. Зачем вам лишняя макулатура, когда у вас теперь есть Знание? <br>
-                    Мы сэкономили немного электричества и бумаги, а вы получили +10 к профессиональной карме и +50 к авторитету на совещаниях. <br>
-                    Идите и несите свет просвещения (и низкий импеданс) в этот мир!
-                `;
-
-                // Убираем кнопку сертификата, оставляем только текст
-                btnCert.style.display = 'none';
-                btnRestart.style.display = 'none';
-
-                // Добавляем кнопку "В меню"
-                const btnExit = document.createElement('button');
-                btnExit.className = 'action-btn';
-                btnExit.innerText = "Вернуться в меню";
-                btnExit.onclick = () => this.onBack(); // Возврат в главное меню
-                resultScreen.appendChild(btnExit);
-
+                if(btnCert) btnCert.style.display = 'none';
+                if(btnRestart) btnRestart.style.display = 'none'; // Скрываем пересдачу при успехе
                 resIcon.style.animation = "pulse 1s infinite";
             } else {
                 resIcon.innerText = "📚";
                 resTitle.innerText = "Почти получилось";
                 resTitle.style.color = "#e67e22";
-                resDesc.innerText = `Вы набрали ${score} из 20. Чтобы заслужить респект инженеров, нужно минимум 17.`;
-                btnCert.style.display = 'none';
-                btnRestart.style.display = 'inline-block';
+                resDesc.innerText = `Вы набрали ${score} из ${questions.length}. Нужно минимум 85%.`;
+                if(btnCert) btnCert.style.display = 'none';
+                if(btnRestart) btnRestart.style.display = 'inline-block'; // Показываем пересдачу
             }
 
             resScore.innerText = `Результат: ${percent}%`;
         };
 
-        // Запуск
-        renderQuestion();
-    }
+        // --- ФУНКЦИЯ ПЕРЕЗАПУСКА (FIXED) ---
+        const startNewSession = () => {
+            // 1. Сброс переменных
+            currentQIndex = 0;
+            score = 0;
 
+            // 2. Сброс UI (Скрыть итог, Показать вопросы)
+            resultScreen.style.display = 'none';
+            container.style.display = 'block'; // <--- ЭТО ВАЖНОЕ ИСПРАВЛЕНИЕ
+
+            // 3. Сброс прогресса
+            if (this.progressManager) {
+                this.progressManager.updateProgress(5, 0, questions.length);
+            }
+
+            // 4. Блокировка выхода
+            if (systemFinishBtn) {
+                systemFinishBtn.disabled = true;
+                systemFinishBtn.style.opacity = "0.5";
+                systemFinishBtn.innerText = "Сначала сдайте тест";
+            }
+
+            // 5. Рендер первого вопроса
+            renderQuestion();
+        };
+
+        // Привязываем кнопку пересдачи (в конце теста)
+        if(btnRestart) btnRestart.onclick = startNewSession;
+
+        // --- ВХОД (ИСТОРИЯ) ---
+        if (hasHistory) {
+            // Экран "История"
+            container.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h3>Статистика прохождения</h3>
+                    <p>Лучший результат: <b style="color:#27ae60">${savedData.bestPercent}%</b></p>
+                    <p>Последний результат: <b>${savedData.lastPercent}%</b></p>
+                    <!-- Кнопка "Пересдать" (В начале) -->
+                    <button class="action-btn" id="btn-start-retake">Пересдать экзамен</button>
+                </div>
+            `;
+
+            // Если уже сдан - можно выйти
+            if (savedData.isPassed && systemFinishBtn) {
+                systemFinishBtn.disabled = false;
+                systemFinishBtn.innerText = "ВЕРНУТЬСЯ В МЕНЮ";
+                systemFinishBtn.style.opacity = "1";
+            }
+
+            // Привязка кнопки
+            container.querySelector('#btn-start-retake').onclick = startNewSession;
+        } else {
+            // Первый раз
+            startNewSession();
+        }
+    }
 }

@@ -6,16 +6,15 @@ export default class Block1 extends BaseBlock {
         super(container, onBack, block1Data);
     }
 
-    // Этот метод вызывается автоматически из BaseBlock после отрисовки HTML
     mountInteractive(index) {
         const slideId = this.slides[index].id;
-        this.stopAnimations(); // Важно останавливать предыдущие
+        this.stopAnimations();
 
         switch (slideId) {
             case 'neurons': this.initNeurons(); break;
             case 'skull': this.initSkullDemo(); break;
             case 'rhythms': this.initRhythmGenerator(); break;
-            case 'artifacts': this.initArtifacts(); break; // <--- НОВОЕ
+            case 'artifacts': this.initArtifacts(); break;
             case 'quiz': this.initQuiz(); break;
         }
     }
@@ -35,10 +34,8 @@ export default class Block1 extends BaseBlock {
         const splitX = canvas.width * 0.65; // Граница разделения экрана (65% под нейроны)
         const chartHeight = canvas.height;
 
-        // Массив точек графика (для бегущей строки)
         const chartData = new Array(Math.floor(canvas.width - splitX)).fill(0);
 
-        // Генерация нейронов (только в левой части)
         const neurons = Array.from({length: 60}, () => ({
             x: Math.random() * (splitX - 40) + 20, // Отступ от краев
             y: Math.random() * (canvas.height - 40) + 20,
@@ -63,21 +60,15 @@ export default class Block1 extends BaseBlock {
                 let activityLevel;
 
                 if (isSync) {
-                    // При синхронизации все зависят от общего времени
-                    // Используем Math.pow для более резких вспышек (как импульсы)
+
                     activityLevel = Math.pow((Math.sin(time) + 1) / 2, 3);
                 } else {
-                    // Асинхронно: каждый в своей фазе
                     activityLevel = Math.pow((Math.sin(time + n.phase) + 1) / 2, 3);
                 }
 
-                // Накапливаем общий сигнал.
-                // Если асинхронно - сигналы (синусы) будут гасить друг друга.
-                // Но для визуала мы сделаем хитрее: просто посчитаем мгновенное значение
                 let signalContribution = isSync ? Math.sin(time) : Math.sin(time + n.phase);
                 currentTotalSignal += signalContribution;
 
-                // Рисуем точку нейрона
                 const brightness = Math.floor(activityLevel * 255);
                 ctx.fillStyle = `rgba(255, 215, 0, ${activityLevel})`; // Золотой цвет
                 ctx.beginPath();
@@ -86,23 +77,19 @@ export default class Block1 extends BaseBlock {
             });
 
             // 4. Расчет результирующего сигнала для графика
-            // Нормализуем значение, чтобы влезло в график
             let finalValue = 0;
             if (isSync) {
-                // Большая красивая волна
                 finalValue = Math.sin(time) * 40;
             } else {
-                // Шум (случайные колебания около нуля)
                 finalValue = (Math.random() - 0.5) * 5 + (currentTotalSignal / neurons.length) * 5;
             }
 
-            // Сдвигаем массив данных графика (эффект бегущей строки)
             chartData.shift();
             chartData.push(finalValue);
 
             // 5. Отрисовка Графика (Справа)
             ctx.beginPath();
-            ctx.strokeStyle = '#00ff00'; // Ядовито-зеленый цвет осциллографа
+            ctx.strokeStyle = '#00ff00';
             ctx.lineWidth = 3;
             ctx.lineJoin = 'round';
 
@@ -159,7 +146,6 @@ export default class Block1 extends BaseBlock {
         const slider = this.container.querySelector('#skullSlider');
         const textVal = this.container.querySelector('#skullValue');
 
-        // Массив для хранения точек графика (бегущая строка)
         const chartData = new Array(canvas.width).fill(0);
         let time = 0;
 
@@ -167,8 +153,6 @@ export default class Block1 extends BaseBlock {
             // 0. Подготовка данных
             const sliderVal = parseInt(slider.value); // от 1 до 100
 
-            // Расчет толщины слоев (визуально)
-            // Чем больше слайдер, тем толще слой кости (желтый)
             const boneThickness = 20 + sliderVal * 0.8;
             const brainY = 20; // Верхняя граница
             const boneY = brainY + 30; // Начало кости
@@ -177,12 +161,10 @@ export default class Block1 extends BaseBlock {
             const chartAreaY = electrodeY + 10; // Где начинается график
 
             // Расчет амплитуды сигнала (Физика)
-            // Амплитуда обратно пропорциональна квадрату расстояния (условно) + сопротивление
             const attenuationFactor = 1 + (sliderVal / 10);
             const baseAmplitude = 40; // Исходная сила сигнала
             const currentAmplitude = baseAmplitude / attenuationFactor;
 
-            // Обновление текста
             if(sliderVal < 20) textVal.innerText = "Тонкий (Ребенок / Висок)";
             else if(sliderVal > 70) textVal.innerText = "Толстый (Затылок / Взрослый)";
             else textVal.innerText = "Средний";
@@ -210,7 +192,6 @@ export default class Block1 extends BaseBlock {
             time += 0.1;
 
             // Формула ЭЭГ: Смесь Дельта (медленная) + Альфа (средняя) + Бета (быстрая) + Шум
-            // Это создает характерную "зубчатость" реального сигнала
             const rawSignal =
                 Math.sin(time * 0.5) * 1.5 +  // Дельта
                 Math.sin(time * 2.0) * 1.0 +  // Альфа
@@ -225,7 +206,6 @@ export default class Block1 extends BaseBlock {
             chartData.push(processedSignal);
 
             // 4. Отрисовка Графика (Осциллограф внизу)
-            // Фон графика
             const chartHeight = canvas.height - chartAreaY;
             ctx.fillStyle = '#222';
             ctx.fillRect(0, chartAreaY, canvas.width, chartHeight);
@@ -334,7 +314,6 @@ export default class Block1 extends BaseBlock {
             if (state.delta) signal += Math.sin(time * 0.8) * 35;
 
             // 2. Тета (Средне-медленная, ~6 Гц)
-            // Добавляем небольшую модуляцию, чтобы отличалась от синусоиды
             if (state.theta) signal += Math.sin(time * 1.5) * 25 + Math.sin(time * 1.6) * 5;
 
             // 3. Альфа (Веретена, ~10 Гц)
@@ -348,7 +327,6 @@ export default class Block1 extends BaseBlock {
             if (state.beta) signal += Math.sin(time * 6.0) * 8 + Math.sin(time * 7.0) * 4;
 
             // 5. Сеть 50Гц (Очень быстрая, регулярная)
-            // Коэффициент времени высокий (15.0), чтобы создать эффект частой гребенки
             if (state.mains) {
                 signal += Math.sin(time * 20.0) * 18;
             }
@@ -380,16 +358,14 @@ export default class Block1 extends BaseBlock {
             // График
             ctx.beginPath();
             ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#212529'; // Черный по умолчанию
+            ctx.strokeStyle = '#212529';
 
-            // Если включена только наводка или только ЭМГ - красим в "опасный" цвет
             const isSignal = state.delta || state.theta || state.alpha || state.beta;
             const isArtifact = state.mains || state.emg;
 
             if (isArtifact && !isSignal) {
                 ctx.strokeStyle = '#d63031'; // Красный (Тревога)
             } else if (state.mains && isSignal) {
-                // Если сигнал смешан с наводкой, делаем линию чуть толще визуально (эффект размытия)
                 ctx.lineWidth = 2;
             }
 
@@ -472,7 +448,6 @@ export default class Block1 extends BaseBlock {
 
             // 1. Базовый сигнал (Мозг)
             if (state.clean) {
-                // Альфа-ритм с модуляцией
                 signal += Math.sin(time * 3.0) * ((Math.sin(time * 0.5) + 1.5) / 2) * 20;
             }
 
@@ -493,7 +468,6 @@ export default class Block1 extends BaseBlock {
                     blinkPhase += Math.PI / blinkDuration; // Шаг фазы
 
                     // Форма моргания: Половина синусоиды (холм)
-                    // Амплитуда 200 (в 10 раз больше мозга!)
                     const blinkValue = Math.sin(blinkPhase) * 200;
 
                     signal += blinkValue;
@@ -506,7 +480,6 @@ export default class Block1 extends BaseBlock {
 
             // 3. Мышцы (Хаос)
             if (state.muscle) {
-                // Высокочастотный шум + случайные выстрелы
                 signal += (Math.random() - 0.5) * 40;
                 if (Math.random() > 0.95) signal += (Math.random() - 0.5) * 80;
             }
@@ -524,27 +497,26 @@ export default class Block1 extends BaseBlock {
 
             // Сетка
             ctx.strokeStyle = '#e9ecef'; ctx.lineWidth = 1; ctx.beginPath();
-            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); } // Горизонтали реже
+            for(let i=0; i<canvas.height; i+=50) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
             for(let i=0; i<canvas.width; i+=40) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
             ctx.stroke();
 
             // Ноль
-            const centerY = canvas.height / 2 + 50; // Чуть сместим центр вниз, чтобы моргание (оно идет вверх) влезало
+            const centerY = canvas.height / 2 + 50;
             ctx.strokeStyle = '#adb5bd'; ctx.beginPath();
             ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
 
             // График
             ctx.beginPath();
             ctx.lineWidth = 2;
-            ctx.strokeStyle = '#212529'; // Черный
+            ctx.strokeStyle = '#212529';
 
-            // Если включен любой артефакт, меняем цвет на красный/оранжевый для наглядности?
-            // Лучше оставить черным как в софте, но если идет моргание - можно подсветить
-            if (isBlinking) ctx.strokeStyle = '#6c5ce7'; // Фиолетовый во время моргания
-            else if (state.muscle && !state.clean) ctx.strokeStyle = '#d63031'; // Красный
+
+            if (isBlinking) ctx.strokeStyle = '#6c5ce7';
+            else if (state.muscle && !state.clean) ctx.strokeStyle = '#d63031';
 
             for (let i = 0; i < chartData.length - 1; i++) {
-                if (i === 0) ctx.moveTo(i, centerY - chartData[i]); // Минус, чтобы "+" шел вверх
+                if (i === 0) ctx.moveTo(i, centerY - chartData[i]);
                 else ctx.lineTo(i + 1, centerY - chartData[i+1]);
             }
             ctx.stroke();
@@ -563,16 +535,33 @@ export default class Block1 extends BaseBlock {
         draw();
     }
 
-    // --- СЛАЙД 1.5: КВИЗ (СЛОЖНЫЙ) ---
-    initQuiz() {
+    // --- СЛАЙД 1.5: КВИЗ
+initQuiz() {
         const container = this.container.querySelector('#quiz-container');
-        const resultBox = this.container.querySelector('#quiz-result');
-        const nextBtn = this.container.querySelector('#next-btn'); // Кнопка "Завершить"
+        const finishBtn = this.container.querySelector('#next-btn');
 
         if (!container) return;
 
-        // Блокируем кнопку "Завершить", пока тест не пройден
-        if (nextBtn) nextBtn.disabled = true;
+        // 1. Проверка истории
+        const savedData = this.progressManager ? this.progressManager.getBlockInfo(1) : null;
+
+        // Переменные
+        let score = 0;
+        let answeredCount = 0;
+
+        // Блокируем выход при старте (если еще не сдан)
+        if (finishBtn) {
+            finishBtn.disabled = true;
+            finishBtn.style.opacity = "0.5";
+            finishBtn.innerText = "Завершите тест";
+
+            // Если уже сдан ранее - разблокируем сразу
+            if (savedData && savedData.isPassed) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить урок";
+            }
+        }
 
         // База вопросов
         const questions = [
@@ -581,152 +570,168 @@ export default class Block1 extends BaseBlock {
                 options: [
                     { text: "Потенциалы действия (спайки) отдельных нейронов.", correct: false },
                     { text: "Суммарные постсинаптические потенциалы тысяч нейронов.", correct: true },
-                    { text: "Движение крови по сосудам коры (гемодинамический ответ).", correct: false }, // Это fMRI
-                    { text: "Электрическое сопротивление кожи.", correct: false } // Это КГР
+                    { text: "Движение крови по сосудам коры.", correct: false },
+                    { text: "Электрическое сопротивление кожи.", correct: false }
                 ],
-                explanation: "ЭЭГ не видит одиночные нейроны (слишком слабые). Мы видим только результат синхронной работы тысяч клеток — постсинаптические потенциалы."
+                explanation: "ЭЭГ не видит одиночные нейроны. Мы видим только результат синхронной работы тысяч клеток."
             },
             {
                 text: "2. Почему амплитуда сигнала на скальпе в десятки раз меньше, чем на коре мозга?",
                 options: [
                     { text: "Потому что нейроны работают в противофазе.", correct: false },
                     { text: "Из-за высокого электрического сопротивления костей черепа.", correct: true },
-                    { text: "Потому что мозговая жидкость (ликвор) усиливает шум.", correct: false },
-                    { text: "Сигнал теряется в проводах электрода.", correct: false }
+                    { text: "Потому что ликвор усиливает шум.", correct: false },
+                    { text: "Сигнал теряется в проводах.", correct: false }
                 ],
-                explanation: "Главный барьер — это череп. Кость работает как мощный резистор, гасящий амплитуду сигнала."
+                explanation: "Главный барьер — это череп. Кость работает как мощный резистор."
             },
             {
-                text: "3. Пациент сидит расслабленно с закрытыми глазами. Вы видите ритмичные волны 10 Гц. Он открывает глаза, и ритм исчезает. Что это?",
+                text: "3. Пациент сидит с закрытыми глазами. Вы видите ритмичные волны 10 Гц. Он открывает глаза, ритм исчезает. Что это?",
                 options: [
-                    { text: "Это патология: исчезновение ритма говорит о нарушении работы коры.", correct: false },
-                    { text: "Это артефакт моргания, который перекрыл сигнал.", correct: false },
-                    { text: "Это нормальная «Реакция активации» (депрессия Альфа-ритма).", correct: true },
-                    { text: "Это переход из Дельта-ритма в Бета-ритм.", correct: false }
+                    { text: "Патология.", correct: false },
+                    { text: "Артефакт моргания.", correct: false },
+                    { text: "Нормальная «Реакция активации» (Альфа-ритм).", correct: true },
+                    { text: "Переход в Бета-ритм.", correct: false }
                 ],
-                explanation: "Альфа-ритм — ритм покоя и закрытых глаз. При открытии глаз мозг начинает обрабатывать зрительную информацию, и Альфа сменяется быстрой Бетой (десинхронизация)."
+                explanation: "Альфа-ритм — ритм покоя. При открытии глаз он сменяется десинхронизацией."
             },
             {
-                text: "4. Вы видите на записи «жирную», очень частую и регулярную волну, которая окрашивает весь график в черный цвет. Что нужно проверить в первую очередь?",
+                text: "4. «Жирная» регулярная волна, окрашивающая график в черный цвет. Что проверить?",
                 options: [
-                    { text: "Попросить пациента расслабить челюсть (это мышечный спазм).", correct: false }, // Мышцы хаотичны
-                    { text: "Качество заземления и контакт электродов (это сетевая наводка 50 Гц).", correct: true },
-                    { text: "Не начался ли у пациента эпилептический приступ.", correct: false },
-                    { text: "Уровень заряда батареи усилителя.", correct: false }
+                    { text: "Расслабить челюсть.", correct: false },
+                    { text: "Заземление и контакт (наводка 50 Гц).", correct: true },
+                    { text: "Эпилепсию.", correct: false },
+                    { text: "Батарею.", correct: false }
                 ],
-                explanation: "Регулярная, частая помеха — это почти всегда электросеть (50 Гц). Мышцы дают хаотичный «рваный» сигнал."
+                explanation: "Регулярная помеха — это электросеть 50 Гц. Мышцы дают хаотичный сигнал."
             },
             {
-                text: "5. Сравните амплитуду полезного сигнала мозга (Альфа) и артефакта моргания. Какое утверждение верно?",
+                text: "5. Сравните амплитуду сигнала мозга и артефакта моргания.",
                 options: [
-                    { text: "Они примерно одинаковы (около 50 мкВ).", correct: false },
-                    { text: "Сигнал мозга мощнее, так как нейронов миллиарды.", correct: false },
-                    { text: "Артефакт моргания может быть в 10 раз мощнее сигнала мозга.", correct: true },
-                    { text: "Глаза не создают электрических полей, только механические помехи.", correct: false }
+                    { text: "Одинаковы.", correct: false },
+                    { text: "Мозг мощнее.", correct: false },
+                    { text: "Моргание в 10 раз мощнее сигнала мозга.", correct: true },
+                    { text: "Глаза не создают помех.", correct: false }
                 ],
-                explanation: "Глаз — мощный диполь. Моргание создает всплеск в 200-500 мкВ и выше, тогда как мозг дает всего 20-50 мкВ."
+                explanation: "Глаз — мощный диполь. Моргание создает всплеск в сотни микровольт."
             }
         ];
 
-        // Счетчик правильных ответов
-        let correctAnswersCount = 0;
-        const totalQuestions = questions.length;
+        const total = questions.length;
 
-        // Рендер вопросов
-        questions.forEach((q, index) => {
-            const qBlock = document.createElement('div');
-            qBlock.className = 'quiz-question';
+        // --- РЕНДЕР (СПИСОК) ---
+        const renderQuestions = () => {
+            container.innerHTML = '';
+            score = 0;
+            answeredCount = 0;
 
-            const title = document.createElement('h3');
-            title.innerText = q.text;
-            qBlock.appendChild(title);
+            // Сброс прогресса
+            if (this.progressManager) this.progressManager.updateProgress(1, 0, total);
 
-            const optionsDiv = document.createElement('div');
-            optionsDiv.className = 'quiz-options';
+            questions.forEach(q => {
+                const el = document.createElement('div');
+                el.className = 'quiz-question';
+                el.dataset.answered = "false";
 
-            const explanation = document.createElement('div');
-            explanation.className = 'quiz-explanation';
-            explanation.innerText = q.explanation;
+                el.innerHTML = `<h3>${q.text}</h3>`;
+                const opts = document.createElement('div');
+                opts.className = 'quiz-options';
+                const expl = document.createElement('div');
+                expl.className = 'quiz-explanation';
+                expl.innerText = q.explanation;
 
-            let isAnswered = false;
+                // Перемешивание
+                const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
 
-            // Перемешиваем варианты ответов (Fisher-Yates shuffle), чтобы нельзя было запомнить позицию
-            const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-btn';
+                    btn.innerText = opt.text;
 
-            shuffledOptions.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-btn';
-                btn.innerText = opt.text;
+                    btn.onclick = () => {
+                        if (el.dataset.answered === "true") return;
+                        el.dataset.answered = "true";
+                        answeredCount++;
 
-                btn.onclick = () => {
-                    if (isAnswered) return; // Запрет повторного клика
-                    isAnswered = true;
+                        opts.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
 
-                    if (opt.correct) {
-                        btn.classList.add('correct');
-                        correctAnswersCount++;
-                        // Если это был последний вопрос и все верно - разблокируем выход
-                        checkCompletion();
-                    } else {
-                        btn.classList.add('wrong');
-                        // Подсветить правильный ответ, чтобы обучить пользователя
-                        const correctBtn = Array.from(optionsDiv.children).find(b => b.innerText === q.options.find(o => o.correct).text);
-                        if (correctBtn) correctBtn.classList.add('correct');
-                    }
+                        if (opt.correct) {
+                            btn.classList.add('correct');
+                            score++;
+                            expl.innerHTML = `<b style="color:green">Верно!</b> ${q.explanation}`;
+                            expl.style.background = "#d4edda";
+                            expl.style.color = "#155724";
+                        } else {
+                            btn.classList.add('wrong');
+                            // Показ правильного
+                            const correctBtn = Array.from(opts.children).find(b => b.innerText === q.options.find(o => o.correct).text);
+                            if(correctBtn) correctBtn.classList.add('correct');
 
-                    // Показать объяснение
-                    explanation.style.display = 'block';
-                };
+                            expl.innerHTML = `<b style="color:red">Ошибка.</b> ${q.explanation}`;
+                            expl.style.background = "#f8d7da";
+                            expl.style.color = "#721c24";
+                        }
+                        expl.style.display = 'block';
 
-                optionsDiv.appendChild(btn);
+                        // Сохранение
+                        if (this.progressManager) this.progressManager.updateProgress(1, score, total);
+
+                        if (answeredCount === total) {
+                            showInlineResult();
+                        }
+                    };
+                    opts.appendChild(btn);
+                });
+                el.appendChild(opts);
+                el.appendChild(expl);
+                container.appendChild(el);
             });
-
-            qBlock.appendChild(optionsDiv);
-            qBlock.appendChild(explanation);
-            container.appendChild(qBlock);
-        });
-
-        const checkCompletion = () => {
-            // Если ответил на все вопросы (даже с ошибками - мы показываем объяснение, так что обучение пройдено)
-            // Но для строгости можно требовать correctAnswersCount === totalQuestions
-            // Давайте сделаем мягко: просто покажем итог
-            if (correctAnswersCount === totalQuestions) {
-                resultBox.style.display = 'block';
-                if (nextBtn) {
-                    nextBtn.disabled = false;
-                    nextBtn.innerText = "Завершить урок";
-                    nextBtn.classList.add('fade-in'); // Привлечь внимание
-                }
-            }
         };
 
-        // Разрешаем пройти дальше, даже если ошибся (в обучающем режиме),
-        // но лучше заставить ответить на все.
-        // В текущей логике `nextBtn` разблокируется ТОЛЬКО если на все вопросы дан ВЕРНЫЙ ответ с первого раза.
-        // Давайте смягчим: разблокируем, если пользователь кликнул на любой вариант во всех 5 вопросах.
+        // --- РЕЗУЛЬТАТ ВНИЗУ ---
+        const showInlineResult = () => {
+            if (this.progressManager) this.progressManager.saveResult(1, score, total);
 
-        // Переписываем логику checkCompletion для режима обучения (Learning Mode):
-        // Пользователь должен просто попробовать ответить на все вопросы.
-        let answeredQuestions = 0;
-        const allButtons = container.querySelectorAll('.quiz-btn');
-        allButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Подсчитываем количество блоков, в которых есть нажатая кнопка
-                const parent = btn.closest('.quiz-question');
-                if (!parent.dataset.answered) {
-                    parent.dataset.answered = "true";
-                    answeredQuestions++;
-                    if (answeredQuestions === totalQuestions) {
-                        if (nextBtn) nextBtn.disabled = false;
-                        resultBox.style.display = 'block';
-                        resultBox.innerHTML = `
-                            <h3 style="color: var(--primary-color);">Тест завершен!</h3>
-                            <p>Ваш результат: ${correctAnswersCount} из ${totalQuestions}</p>
-                            <p style="font-size: 14px; color: #666;">Нажмите "Завершить", чтобы вернуться в меню.</p>
-                        `;
-                    }
+            // Удаляем старый если есть
+            const old = container.querySelector('.inline-result-box');
+            if(old) old.remove();
+
+            const percent = Math.round((score / total) * 100);
+            const passed = percent >= 80;
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'inline-result-box';
+            resDiv.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">${passed ? '🎉' : '📚'}</div>
+                <h3 style="color:var(--primary-color)">Тест завершен</h3>
+                <div class="result-score-text">${score} из ${total} (${percent}%)</div>
+                <p class="result-message">
+                    ${passed ? 'Отличный результат!' : 'Попробуйте еще раз, чтобы закрепить знания.'}
+                </p>
+                <button class="action-btn" id="btn-inline-retake" style="background: #fff; color: #333; border: 1px solid #ccc;">
+                    ↺ Пересдать тест
+                </button>
+            `;
+
+            container.appendChild(resDiv);
+            setTimeout(() => resDiv.scrollIntoView({ behavior: "smooth" }), 100);
+
+            if (passed && finishBtn) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить урок";
+            }
+
+            resDiv.querySelector('#btn-inline-retake').onclick = () => {
+                renderQuestions();
+                if (finishBtn) {
+                    finishBtn.disabled = true;
+                    finishBtn.style.opacity = "0.5";
+                    finishBtn.innerText = "Завершите тест";
                 }
-            });
-        });
+            };
+        };
+
+        renderQuestions();
     }
 }

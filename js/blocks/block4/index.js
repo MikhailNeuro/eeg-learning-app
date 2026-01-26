@@ -307,21 +307,23 @@ export default class Block4 extends BaseBlock {
     // --- 4.2 и 4.3 ГАЛЕРЕЯ ---
     initGallery(filterType) {
         const grid = this.container.querySelector(filterType === 'med' ? '#med-grid' : '#con-grid');
-        const detailView = this.container.querySelector(filterType === 'med' ? '#med-detail' : '#con-detail');
+        // Перемещаем detailView внутрь грида, если он еще не там
+        // (в HTML он был снаружи, но для работы grid-column он должен быть внутри container)
+        let detailView = this.container.querySelector(filterType === 'med' ? '#med-detail' : '#con-detail');
+        grid.appendChild(detailView); // Переносим в грид
+
         const title = this.container.querySelector(filterType === 'med' ? '#med-title' : '#con-title');
         const desc = this.container.querySelector(filterType === 'med' ? '#med-desc' : '#con-desc');
         const specs = this.container.querySelector(filterType === 'med' ? '#med-specs' : '#con-specs');
 
         const db = this.getDevices();
 
-        // Рендер карточек
         Object.values(db).forEach(device => {
             if (device.category !== filterType) return;
 
             const card = document.createElement('div');
             card.className = 'product-card';
 
-            // Бейдж
             const badgeClass = filterType === 'med' ? 'med' : 'con';
             const badgeText = filterType === 'med' ? 'Medical' : 'Consumer';
 
@@ -335,21 +337,58 @@ export default class Block4 extends BaseBlock {
             `;
 
             card.onclick = () => {
-                // Сброс выделения
+                // 1. Визуальное выделение
                 grid.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
 
-                // Показ деталей
-                detailView.style.display = 'block';
+                // 2. Наполнение данными
                 title.innerText = device.name;
                 desc.innerText = device.desc;
                 specs.innerHTML = device.specs.map(s => {
                     const [k, v] = s.split(':');
                     return `<li><b>${k}:</b>${v}</li>`;
                 }).join('');
+
+                // 3. ПОЗИЦИОНИРОВАНИЕ
+                const cards = Array.from(grid.querySelectorAll('.product-card'));
+                const myIndex = cards.indexOf(card);
+                let lastInRow = card;
+
+                for (let i = myIndex + 1; i < cards.length; i++) {
+                    const nextCard = cards[i];
+                    if (nextCard.offsetTop > card.offsetTop) {
+                        break;
+                    }
+                    lastInRow = nextCard;
+                }
+
+                if (lastInRow.nextSibling) {
+                    grid.insertBefore(detailView, lastInRow.nextSibling);
+                } else {
+                    grid.appendChild(detailView);
+                }
+
+                // 4. Показываем
+                detailView.style.display = 'block';
+
+                // 5. Двигаем стрелочку (треугольник)
+                const cardRect = card.getBoundingClientRect();
+                const gridRect = grid.getBoundingClientRect();
+                const arrowX = (cardRect.left - gridRect.left) + (cardRect.width / 2);
+                const percent = (arrowX / gridRect.width) * 100;
+
+                let styleTag = document.getElementById('dynamic-arrow-style');
+                if (!styleTag) {
+                    styleTag = document.createElement('style');
+                    styleTag.id = 'dynamic-arrow-style';
+                    document.head.appendChild(styleTag);
+                }
+                styleTag.innerHTML = `.product-detail-view::before { left: ${percent}% !important; }`;
+
+                // 6. Скролл (если нужно, чтобы точно было видно описание)
             };
 
-            grid.appendChild(card);
+            grid.insertBefore(card, detailView);
         });
     }
 
@@ -539,9 +578,19 @@ export default class Block4 extends BaseBlock {
     }
 
     // --- 4.5 СЛОЖНЫЙ ПРОДУКТОВЫЙ КВИЗ ---
+// --- 4.5 КВИЗ (С ПАМЯТЬЮ И ИСПРАВЛЕНИЯМИ) ---
     initQuiz() {
         const container = this.container.querySelector('#quiz-container');
-        if(!container) return;
+        const finishBtn = this.container.querySelector('#next-btn');
+
+        if (!container) return;
+
+        // Блокируем системную кнопку выхода
+        if (finishBtn) {
+            finishBtn.disabled = true;
+            finishBtn.style.opacity = "0.5";
+            finishBtn.innerText = "Завершите тест";
+        }
 
         const questions = [
             {
@@ -557,7 +606,7 @@ export default class Block4 extends BaseBlock {
             {
                 text: "Исследователь хочет изучать активность Префронтальной коры (Лобные доли - Fp1, Fp2), отвечающей за принятие решений. Почему ему НЕ подойдет стандартный ободок BrainBit Headband?",
                 options: [
-                    { text: "У  BrainBit электроды фиксированы на висках (T3/T4) и затылке (O1/O2). Он физически не достает до лба.", correct: true },
+                    { text: "У BrainBit электроды фиксированы на висках (T3/T4) и затылке (O1/O2). Он физически не достает до лба.", correct: true },
                     { text: "У BrainBit сухие электроды, а для лба нужны мокрые.", correct: false },
                     { text: "У BrainBit всего 4 канала, а для лба нужно минимум 8.", correct: false }
                 ],
@@ -593,53 +642,140 @@ export default class Block4 extends BaseBlock {
             }
         ];
 
+        let score = 0;
         let answeredCount = 0;
         const total = questions.length;
 
-        questions.forEach((q, idx) => {
-            const el = document.createElement('div');
-            el.className = 'quiz-question';
-            el.dataset.answered = "false";
+        // --- РЕНДЕР ВОПРОСОВ ---
+        const renderQuestions = () => {
+            container.innerHTML = '';
+            score = 0;
+            answeredCount = 0;
 
-            el.innerHTML = `<div style="font-size:10px; color:#888; margin-bottom:5px;">ВОПРОС ${idx+1}</div><h3>${q.text}</h3>`;
+            // Сброс прогресса
+            if (this.progressManager) this.progressManager.updateProgress(4, 0, total);
 
-            const opts = document.createElement('div');
-            opts.className = 'quiz-options';
+            questions.forEach(q => {
+                const el = document.createElement('div');
+                el.className = 'quiz-question';
+                el.dataset.answered = "false";
 
-            // Перемешивание
-            const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                el.innerHTML = `<h3>${q.text}</h3>`;
+                const opts = document.createElement('div');
+                opts.className = 'quiz-options';
 
-            shuffledOptions.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-btn';
-                btn.innerText = opt.text;
+                // Перемешивание
+                const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
 
-                btn.onclick = () => {
-                    if(el.dataset.answered === "true") return;
-                    el.dataset.answered = "true";
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-btn';
+                    btn.innerText = opt.text;
 
-                    if(opt.correct) {
-                        btn.classList.add('correct');
-                        const expl = document.createElement('div');
-                        expl.className = 'quiz-explanation';
-                        expl.style.display = 'block';
-                        expl.innerHTML = `<b>Верно!</b> ${q.explanation}`;
-                        el.appendChild(expl);
-                    } else {
-                        btn.classList.add('wrong');
-                        const expl = document.createElement('div');
-                        expl.className = 'quiz-explanation';
-                        expl.style.display = 'block';
-                        expl.style.background = '#fff3cd';
-                        expl.style.color = '#856404';
-                        expl.innerHTML = `<b>Ошибка.</b> ${q.explanation}`;
-                        el.appendChild(expl);
-                    }
-                };
-                opts.appendChild(btn);
+                    btn.onclick = () => {
+                        if (el.dataset.answered === "true") return;
+                        el.dataset.answered = "true";
+                        answeredCount++;
+
+                        // Блокируем кнопки в текущем вопросе
+                        opts.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
+
+                        const feedback = document.createElement('div');
+                        feedback.className = 'quiz-explanation';
+                        feedback.style.display = 'block';
+
+                        if (opt.correct) {
+                            btn.classList.add('correct');
+                            score++;
+                            feedback.innerHTML = `<b>Верно!</b> ${q.explanation}`;
+                            feedback.style.background = "#d4edda";
+                            feedback.style.color = "#155724";
+                        } else {
+                            btn.classList.add('wrong');
+                            // Подсветка правильного
+                            const correctBtn = Array.from(opts.children).find(b => b.innerText === q.options.find(o => o.correct).text);
+                            if (correctBtn) correctBtn.classList.add('correct');
+
+                            feedback.innerHTML = `<b>Ошибка.</b> ${q.explanation}`;
+                            feedback.style.background = "#f8d7da";
+                            feedback.style.color = "#721c24";
+                        }
+
+                        el.appendChild(feedback);
+
+                        // Сохранение "на лету"
+                        if (this.progressManager) {
+                            this.progressManager.updateProgress(4, score, total);
+                        }
+
+                        // ПРОВЕРКА ЗАВЕРШЕНИЯ
+                        if (answeredCount === total) {
+                            showInlineResult();
+                        }
+                    };
+                    opts.appendChild(btn);
+                });
+                el.appendChild(opts);
+                container.appendChild(el);
             });
-            el.appendChild(opts);
-            container.appendChild(el);
-        });
+        };
+
+        // --- ПОКАЗ РЕЗУЛЬТАТА (ВНИЗУ, НЕ СКРЫВАЯ ВОПРОСЫ) ---
+        const showInlineResult = () => {
+            // Сохраняем финал
+            if (this.progressManager) {
+                this.progressManager.saveResult(4, score, total);
+            }
+
+            // Удаляем старый результат если есть
+            const oldRes = container.querySelector('.inline-result-box');
+            if (oldRes) oldRes.remove();
+
+            const percent = Math.round((score / total) * 100);
+            const passed = percent >= 80;
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'inline-result-box';
+
+            resDiv.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">${passed ? '🏆' : '💪'}</div>
+                <h3 style="color:var(--primary-color)">Тест завершен</h3>
+                <div class="result-score-text">${score} из ${total} (${percent}%)</div>
+                <p class="result-message">
+                    ${passed ? 'Отличный результат! Вы готовы к работе.' : 'Рекомендуем повторить материал и пройти тест заново.'}
+                </p>
+                <button class="action-btn" id="btn-inline-retake" style="background: #fff; color: #333; border: 1px solid #ccc;">
+                    ↺ Пересдать тест
+                </button>
+            `;
+
+            container.appendChild(resDiv);
+
+            // Скролл к результату
+            setTimeout(() => resDiv.scrollIntoView({ behavior: "smooth" }), 100);
+
+            // Разблокировка системной кнопки выхода (если сдал)
+            if (passed && finishBtn) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить Блок 4";
+            }
+
+            // Кнопка пересдачи
+            resDiv.querySelector('#btn-inline-retake').onclick = () => {
+                // Перерисовываем вопросы заново (сброс)
+                renderQuestions();
+
+                // Блокируем кнопку выхода снова
+                if (finishBtn) {
+                    finishBtn.disabled = true;
+                    finishBtn.style.opacity = "0.5";
+                    finishBtn.innerText = "Завершите тест";
+                }
+            };
+        };
+
+        // Старт
+        renderQuestions();
     }
 }

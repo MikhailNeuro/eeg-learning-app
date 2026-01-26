@@ -777,15 +777,28 @@ export default class Block2 extends BaseBlock {
     }
 
     // --- 2.6 Квиз
-initQuiz() {
+// --- 2.6 КВИЗ (С ПАМЯТЬЮ И ПРОМЕЖУТОЧНЫМ СОХРАНЕНИЕМ) ---
+    initQuiz() {
         const container = this.container.querySelector('#quiz-container');
-        const resultBox = this.container.querySelector('#quiz-result');
-        const nextBtn = this.container.querySelector('#next-btn'); // Кнопка "Завершить"
+        const finishBtn = this.container.querySelector('#next-btn');
 
         if (!container) return;
 
-        // Блокируем выход, пока не ответит
-        if (nextBtn) nextBtn.disabled = true;
+        const savedData = this.progressManager ? this.progressManager.getBlockInfo(2) : null;
+        let score = 0;
+        let answeredCount = 0;
+
+        // Блокировка
+        if (finishBtn) {
+            finishBtn.disabled = true;
+            finishBtn.style.opacity = "0.5";
+            finishBtn.innerText = "Завершите тест";
+            if (savedData && savedData.isPassed) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить блок";
+            }
+        }
 
         const questions = [
             {
@@ -801,7 +814,7 @@ initQuiz() {
             {
                 text: "2. Вы видите на мониторе 'жирную' регулярную синусоиду частотой 50 Гц, которая полностью перекрывает сигнал мозга. О чем это говорит?",
                 options: [
-                    { text: "Пациент сильно напряг мышцы шеи.", correct: false }, // Это был бы хаос, а не синусоида
+                    { text: "Пациент сильно напряг мышцы шеи.", correct: false },
                     { text: "У пациента очень мощный Бета-ритм (высокий интеллект).", correct: false },
                     { text: "Высокий импеданс (плохой контакт) на одном из электродов.", correct: true },
                     { text: "Пациент моргнул.", correct: false }
@@ -813,8 +826,8 @@ initQuiz() {
                 options: [
                     { text: "В левом полушарии, в зрительной коре.", correct: false },
                     { text: "В правом полушарии, в моторной (центральной) коре.", correct: true },
-                    { text: "На макушке, ровно по центру.", correct: false }, // Это Cz
-                    { text: "В правом виске.", correct: false } // Это T4
+                    { text: "На макушке, ровно по центру.", correct: false },
+                    { text: "В правом виске.", correct: false }
                 ],
                 explanation: "Разбираем 10-20: C = Central (Центр/Моторная), Четная цифра (4) = Правая сторона."
             },
@@ -822,7 +835,7 @@ initQuiz() {
                 text: "4. Почему сухие электроды (BrainBit) более чувствительны к артефактам движения, чем мокрые?",
                 options: [
                     { text: "Потому что у них нет гелевой подушки, которая гасит механические вибрации.", correct: true },
-                    { text: "Потому что золото проводит ток хуже, чем хлорсеребро.", correct: false }, // Золото проводит отлично
+                    { text: "Потому что золото проводит ток хуже, чем хлорсеребро.", correct: false },
                     { text: "Потому что они используют Bluetooth, а он боится движения.", correct: false },
                     { text: "Это миф, сухие электроды работают стабильнее мокрых.", correct: false }
                 ],
@@ -831,7 +844,7 @@ initQuiz() {
             {
                 text: "5. В какой последовательности обрабатывается сигнал?",
                 options: [
-                    { text: "Оцифровка (АЦП) -> Усиление -> Фильтрация на ПК.", correct: false }, // Нельзя оцифровать микровольты без усиления
+                    { text: "Оцифровка (АЦП) -> Усиление -> Фильтрация на ПК.", correct: false },
                     { text: "Электрод -> Дифференциальное усиление -> АЦП -> Передача данных.", correct: true },
                     { text: "Электрод -> Передача по Bluetooth -> Усиление на компьютере.", correct: false },
                     { text: "Фильтрация 50Гц -> Электрод -> АЦП.", correct: false }
@@ -840,70 +853,103 @@ initQuiz() {
             }
         ];
 
-        let answeredCount = 0;
-        const totalQuestions = questions.length;
+        const total = questions.length;
 
-        // Рендер вопросов
-        questions.forEach((q) => {
-            const qBlock = document.createElement('div');
-            qBlock.className = 'quiz-question';
-            qBlock.dataset.answered = "false"; // Флаг для подсчета прогресса
+        const renderQuestions = () => {
+            container.innerHTML = '';
+            score = 0;
+            answeredCount = 0;
+            if (this.progressManager) this.progressManager.updateProgress(2, 0, total);
 
-            const title = document.createElement('h3');
-            title.innerText = q.text;
-            qBlock.appendChild(title);
+            questions.forEach(q => {
+                const el = document.createElement('div');
+                el.className = 'quiz-question';
+                el.dataset.answered = "false";
+                el.innerHTML = `<h3>${q.text}</h3>`;
 
-            const optionsDiv = document.createElement('div');
-            optionsDiv.className = 'quiz-options';
+                const opts = document.createElement('div');
+                opts.className = 'quiz-options';
+                const expl = document.createElement('div');
+                expl.className = 'quiz-explanation';
+                expl.innerText = q.explanation;
 
-            const explanation = document.createElement('div');
-            explanation.className = 'quiz-explanation';
-            explanation.innerText = q.explanation;
+                const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
 
-            // Перемешиваем ответы
-            const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-btn';
+                    btn.innerText = opt.text;
 
-            shuffledOptions.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-btn';
-                btn.innerText = opt.text;
+                    btn.onclick = () => {
+                        if (el.dataset.answered === "true") return;
+                        el.dataset.answered = "true";
+                        answeredCount++;
 
-                btn.onclick = () => {
-                    // Блокируем повторное нажатие в этом вопросе
-                    if (qBlock.dataset.answered === "true") return;
-                    qBlock.dataset.answered = "true";
-                    answeredCount++;
+                        opts.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
 
-                    if (opt.correct) {
-                        btn.classList.add('correct');
-                    } else {
-                        btn.classList.add('wrong');
-                        // Подсвечиваем правильный для обучения
-                        const correctBtn = Array.from(optionsDiv.children).find(b => {
-                            // Ищем кнопку с текстом правильного ответа (немного костыльно, но работает без id)
-                            return b.innerText === q.options.find(o => o.correct).text;
-                        });
-                        if (correctBtn) correctBtn.classList.add('correct');
-                    }
-
-                    explanation.style.display = 'block';
-
-                    // Если ответили на все вопросы - открываем выход
-                    if (answeredCount === totalQuestions) {
-                        resultBox.style.display = 'block';
-                        resultBox.classList.add('fade-in');
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.innerText = "Завершить блок";
+                        if (opt.correct) {
+                            btn.classList.add('correct');
+                            score++;
+                            expl.innerHTML = `<b style="color:green">Верно!</b> ${q.explanation}`;
+                            expl.style.background = "#d4edda";
+                            expl.style.color = "#155724";
+                        } else {
+                            btn.classList.add('wrong');
+                            const correctBtn = Array.from(opts.children).find(b => b.innerText === q.options.find(o => o.correct).text);
+                            if(correctBtn) correctBtn.classList.add('correct');
+                            expl.innerHTML = `<b style="color:red">Ошибка.</b> ${q.explanation}`;
+                            expl.style.background = "#f8d7da";
+                            expl.style.color = "#721c24";
                         }
-                    }
-                };
-                optionsDiv.appendChild(btn);
-            });
+                        expl.style.display = 'block';
 
-            qBlock.appendChild(optionsDiv);
-            qBlock.appendChild(explanation);
-            container.appendChild(qBlock);
-        });
+                        if (this.progressManager) this.progressManager.updateProgress(2, score, total);
+
+                        if (answeredCount === total) {
+                            showInlineResult();
+                        }
+                    };
+                    opts.appendChild(btn);
+                });
+                el.appendChild(opts);
+                el.appendChild(expl);
+                container.appendChild(el);
+            });
+        };
+
+        const showInlineResult = () => {
+            if (this.progressManager) this.progressManager.saveResult(2, score, total);
+            const old = container.querySelector('.inline-result-box');
+            if(old) old.remove();
+
+            const percent = Math.round((score / total) * 100);
+            const passed = percent >= 80;
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'inline-result-box';
+            resDiv.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">${passed ? '🎉' : '📚'}</div>
+                <h3 style="color:var(--primary-color)">Тест завершен</h3>
+                <div class="result-score-text">${score} из ${total} (${percent}%)</div>
+                <p class="result-message">${passed ? 'Отличный результат!' : 'Попробуйте еще раз.'}</p>
+                <button class="action-btn" id="btn-inline-retake" style="background: #fff; color: #333; border: 1px solid #ccc;">↺ Пересдать тест</button>
+            `;
+
+            container.appendChild(resDiv);
+            setTimeout(() => resDiv.scrollIntoView({ behavior: "smooth" }), 100);
+
+            if (passed && finishBtn) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить блок";
+            }
+
+            resDiv.querySelector('#btn-inline-retake').onclick = () => {
+                renderQuestions();
+                if (finishBtn) { finishBtn.disabled = true; finishBtn.style.opacity = "0.5"; }
+            };
+        };
+
+        renderQuestions();
     }
 }

@@ -709,14 +709,30 @@ export default class Block3 extends BaseBlock {
         draw();
     }
     // --- 3.5 ФИНАЛЬНЫЙ ТЕСТ БЛОКА 3
+// --- 3.5 ФИНАЛЬНЫЙ ТЕСТ БЛОКА 3 (ИСПРАВЛЕННЫЙ) ---
     initQuiz() {
         const container = this.container.querySelector('#quiz-container');
-        const resultBox = this.container.querySelector('#quiz-result');
-        const nextBtn = this.container.querySelector('#next-btn');
+        const finishBtn = this.container.querySelector('#next-btn');
 
         if (!container) return;
-        if (nextBtn) nextBtn.disabled = true;
 
+        const savedData = this.progressManager ? this.progressManager.getBlockInfo(3) : null;
+        let score = 0;
+        let answeredCount = 0;
+
+        if (finishBtn) {
+            finishBtn.disabled = true;
+            finishBtn.style.opacity = "0.5";
+            finishBtn.innerText = "Завершите тест";
+            if (savedData && savedData.isPassed) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить Блок 3";
+            }
+        }
+
+
+        // База вопросов (ваши 10 вопросов)
         const questions = [
             {
                 text: "1. Теорема Котельникова (Найквиста) гласит, что частота дискретизации должна быть минимум в 2 раза выше частоты сигнала. Что произойдет, если мы нарушим это правило (запишем сигнал 60 Гц с частотой 100 Гц)?",
@@ -814,68 +830,102 @@ export default class Block3 extends BaseBlock {
             }
         ];
 
-        let answeredCount = 0;
-        const totalQuestions = questions.length;
+        const total = questions.length;
 
-        questions.forEach((q, idx) => {
-            const qBlock = document.createElement('div');
-            qBlock.className = 'quiz-question';
-            qBlock.dataset.answered = "false";
+        const renderQuestions = () => {
+            container.innerHTML = '';
+            score = 0;
+            answeredCount = 0;
+            if (this.progressManager) this.progressManager.updateProgress(3, 0, total);
 
-            const header = document.createElement('div');
-            header.style.marginBottom = '10px';
-            header.innerHTML = `<span style="font-size: 10px; color: #888; text-transform: uppercase;">Вопрос ${idx + 1} из ${totalQuestions}</span>`;
-            qBlock.appendChild(header);
+            questions.forEach(q => {
+                const el = document.createElement('div');
+                el.className = 'quiz-question';
+                el.dataset.answered = "false";
+                el.innerHTML = `<h3>${q.text}</h3>`;
+                const opts = document.createElement('div');
+                opts.className = 'quiz-options';
+                const expl = document.createElement('div');
+                expl.className = 'quiz-explanation';
+                expl.innerText = q.explanation;
 
-            const title = document.createElement('h3');
-            title.innerText = q.text;
-            qBlock.appendChild(title);
+                const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
 
-            const optionsDiv = document.createElement('div');
-            optionsDiv.className = 'quiz-options';
+                shuffledOpts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-btn';
+                    btn.innerText = opt.text;
 
-            const explanation = document.createElement('div');
-            explanation.className = 'quiz-explanation';
-            explanation.innerText = q.explanation;
+                    btn.onclick = () => {
+                        if (el.dataset.answered === "true") return;
+                        el.dataset.answered = "true";
+                        answeredCount++;
 
-            const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                        opts.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
 
-            shuffledOptions.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-btn';
-                btn.innerText = opt.text;
-
-                btn.onclick = () => {
-                    if (qBlock.dataset.answered === "true") return;
-                    qBlock.dataset.answered = "true";
-                    answeredCount++;
-
-                    if (opt.correct) {
-                        btn.classList.add('correct');
-                    } else {
-                        btn.classList.add('wrong');
-                        const correctBtn = Array.from(optionsDiv.children).find(b => b.innerText === q.options.find(o => o.correct).text);
-                        if (correctBtn) correctBtn.classList.add('correct');
-                    }
-
-                    explanation.style.display = 'block';
-
-                    // Если все отвечены
-                    if (answeredCount === totalQuestions) {
-                        resultBox.style.display = 'block';
-                        resultBox.classList.add('fade-in');
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.innerText = "Завершить Блок 3";
+                        if (opt.correct) {
+                            btn.classList.add('correct');
+                            score++;
+                            expl.innerHTML = `<b style="color:green">Верно!</b> ${q.explanation}`;
+                            expl.style.background = "#d4edda";
+                            expl.style.color = "#155724";
+                        } else {
+                            btn.classList.add('wrong');
+                            const correctBtn = Array.from(opts.children).find(b => b.innerText === q.options.find(o => o.correct).text);
+                            if(correctBtn) correctBtn.classList.add('correct');
+                            expl.innerHTML = `<b style="color:red">Ошибка.</b> ${q.explanation}`;
+                            expl.style.background = "#f8d7da";
+                            expl.style.color = "#721c24";
                         }
-                    }
-                };
-                optionsDiv.appendChild(btn);
-            });
+                        expl.style.display = 'block';
 
-            qBlock.appendChild(optionsDiv);
-            qBlock.appendChild(explanation);
-            container.appendChild(qBlock);
-        });
+                        if (this.progressManager) this.progressManager.updateProgress(3, score, total);
+
+                        if (answeredCount === total) {
+                            showInlineResult();
+                        }
+                    };
+                    opts.appendChild(btn);
+                });
+                el.appendChild(opts);
+                el.appendChild(expl);
+                container.appendChild(el);
+            });
+        };
+
+        const showInlineResult = () => {
+            if (this.progressManager) this.progressManager.saveResult(3, score, total);
+            const old = container.querySelector('.inline-result-box');
+            if(old) old.remove();
+
+            const percent = Math.round((score / total) * 100);
+            const passed = percent >= 80;
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'inline-result-box';
+            resDiv.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">${passed ? '🎉' : '📚'}</div>
+                <h3 style="color:var(--primary-color)">Тест завершен</h3>
+                <div class="result-score-text">${score} из ${total} (${percent}%)</div>
+                <p class="result-message">${passed ? 'Отлично!' : 'Повторите материал.'}</p>
+                <button class="action-btn" id="btn-inline-retake" style="background: #fff; color: #333; border: 1px solid #ccc;">↺ Пересдать тест</button>
+            `;
+
+            container.appendChild(resDiv);
+            setTimeout(() => resDiv.scrollIntoView({ behavior: "smooth" }), 100);
+
+            if (passed && finishBtn) {
+                finishBtn.disabled = false;
+                finishBtn.style.opacity = "1";
+                finishBtn.innerText = "Завершить Блок 3";
+            }
+
+            resDiv.querySelector('#btn-inline-retake').onclick = () => {
+                renderQuestions();
+                if (finishBtn) { finishBtn.disabled = true; finishBtn.style.opacity = "0.5"; }
+            };
+        };
+
+        renderQuestions();
     }
 }

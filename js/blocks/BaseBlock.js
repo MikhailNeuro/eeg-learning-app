@@ -22,7 +22,6 @@ export default class BaseBlock extends Component {
         header.style.marginBottom = '20px';
         header.innerHTML = `
             <button id="exit-btn" class="btn btn-outline">← Меню</button>
-            <div style="font-size: 14px; color: #888;">${this.constructor.name}</div>
         `;
 
         // Контейнер слайда
@@ -75,16 +74,25 @@ export default class BaseBlock extends Component {
 
         // 1. Вставка HTML
         container.innerHTML = `
-            <h2 style="color: var(--primary); margin-bottom: 15px;">${slide.title}</h2>
+            <h2 style="color: var(--primary-color); margin-bottom: 15px;">${slide.title}</h2>
             <div class="slide-body" style="line-height: 1.6; color: #444;">${slide.content}</div>
         `;
 
         // 2. Обновление кнопок
-        prevBtn.disabled = this.currentIndex === 0;
-        nextBtn.textContent = this.currentIndex === this.slides.length - 1 ? 'Завершить' : 'Далее';
-        this.container.querySelector('#step-counter').innerText = `${this.currentIndex + 1} / ${this.slides.length}`;
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        nextBtn.title = "";
+        // --------------------------------------------------
 
-        // 3. Запуск логики слайда (если она есть в наследнике)
+        prevBtn.disabled = this.currentIndex === 0;
+
+        if (this.currentIndex === this.slides.length - 1) {
+            nextBtn.textContent = 'Завершить';
+        } else {
+            nextBtn.textContent = 'Далее';
+        }
+
+        this.container.querySelector('#step-counter').innerText = `${this.currentIndex + 1} / ${this.slides.length}`;
         if (typeof this.mountInteractive === 'function') {
             this.mountInteractive(this.currentIndex);
         }
